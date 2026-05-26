@@ -1,0 +1,103 @@
+Nível Baixo: Dúvida sobre comprovante de passagem >
+
+    Assunto > Solicitação de comprovante da reserva FON1842
+
+    Localizador (PNR) > B7Q2LA
+
+    Número do Voo > FON1842
+
+    Origem (IATA) > SDU
+
+    Destino (IATA) > CGH
+
+    Passageiro > Renato Vieira Lopes
+
+    E-mail > renato.lopes@email.com
+
+    Telefone > (21) 97654-1180
+
+    Categoria > Reembolsos e Compensação
+
+    Tipo de Ocorrência > Comprovante / Recibo
+
+    Descrição > Preciso emitir o comprovante da minha passagem para prestação de contas. Não encontrei a opção no site nem no aplicativo da FlightOn. O voo já foi realizado normalmente.
+
+
+Nível Médio: Assistência Especial no Embarque >
+
+    Assunto > Solicitação urgente de assistência especial no voo FON8416
+
+    Localizador (PNR) > Q8L2ZT
+
+    Número do Voo > FON8416
+
+    Origem (IATA) > GRU
+
+    Destino (IATA) > EZE
+
+    Passageiro > Helena Ribeiro Santos
+
+    E-mail > helena.ribeiro@email.com
+
+    Telefone > (11) 99241-7730
+
+    Categoria > Assistência Especial
+
+    Tipo de Ocorrência > Assistência para mobilidade reduzida
+
+    Tipo de Assistência > Cadeira de rodas até a aeronave
+
+    Descrição > Passageira com mobilidade reduzida precisa de cadeira de rodas desde o balcão de check-in até a porta da aeronave. A solicitação foi informada anteriormente, mas não aparece confirmada na reserva. O voo está próximo e preciso garantir o suporte no embarque.
+
+
+Nível Alto: Bagagem Extraviada >
+
+
+    Assunto >	Bagagem extraviada no voo FON3721
+
+    Localizador (PNR) >	K4M9XP
+
+    Número do Voo>  FON3721
+
+    Origem (IATA) > 	GRU
+
+    Destino (IATA) > 	LIS
+
+    Passageiro >	Júlio de Almeida
+
+    E-mail >	mariana.almeida@email.com
+
+    Telefone >	(11) 98765-4321
+
+    Categoria >	Bagagem
+
+    Tipo de Ocorrência >	Extraviada (AHL)
+
+    Tag de Bagagem > FON37210511
+
+    Descrição >	Mala preta rígida marca Samsonite, despachada no check-in às 21:30. Não apareceu na esteira de restituição. Apresentei o comprovante de despacho no balcão.
+
+
+Nível Urgente: Alteração/cancelamento de voo próximo ao embarque >
+
+    Assunto > Solicitação de alteração/cancelamento do voo FON4521
+
+    Localizador (PNR) > K7L2QM
+
+    Número do Voo > FON4521
+
+    Origem (IATA) > GRU
+
+    Destino (IATA) > REC
+
+    Passageiro > Mariana Costa Ribeiro
+
+    E-mail > mariana.ribeiro@email.com
+
+    Telefone > (11) 98877-6655
+
+    Categoria > Alteração/cancelamento de voo
+
+    Tipo de Ocorrência > Remarcação/cancelamento
+
+    Descrição > Preciso solicitar a alteração do meu voo devido a um imprevisto pessoal ocorrido hoje. Tentei realizar a mudança pelo aplicativo, mas a opção aparece indisponível. Como o embarque está próximo, preciso de suporte urgente para remarcar ou cancelar a reserva sem perder o trecho.
