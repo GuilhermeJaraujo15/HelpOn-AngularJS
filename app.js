@@ -558,13 +558,59 @@
       Baixo: { Crítica: "Média", Alta: "Média", Média: "Baixa", Baixa: "Baixa" }
     };
 
+    var fixedPriorityByCategory = {
+      "achados e perdidos": "Baixa",
+      "reembolso e compensacao": "Baixa",
+      "reembolsos e compensacao": "Baixa",
+      "bagagem": "Média",
+      "check-in/embarque": "Alta",
+      "assistencia especial": "Alta",
+      "alteracao/cancelamento de voo": "Urgente"
+    };
+
+    var priorityInputsByLevel = {
+      Baixa: { impact: "Baixo", urgency: "Baixa" },
+      Média: { impact: "Médio", urgency: "Alta" },
+      Alta: { impact: "Alto", urgency: "Média" },
+      Urgente: { impact: "Crítico", urgency: "Crítica" }
+    };
+
     var slaByPriority = { Urgente: 60, Alta: 180, Média: 480, Baixa: 1440 };
     var statusFlow = ["Aberto", "Pendente", "Em Andamento", "Em Espera", "Resolvido", "Fechado"];
 
-    function classifyPriority(impact, urgency) {
-      return (priorityMatrix[impact] && priorityMatrix[impact][urgency]) || "Média";
+    function normalizeCategoryKey(value) {
+      var text = String(value || "").toLowerCase().trim();
+
+      if (typeof text.normalize === "function") {
+        text = text.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      }
+
+      return text
+        .replace(/[–—]/g, "-")
+        .replace(/\s*\/\s*/g, "/")
+        .replace(/\s+/g, " ");
     }
 
+    function priorityForCategory(category) {
+      return fixedPriorityByCategory[normalizeCategoryKey(category)] || null;
+    }
+
+    function priorityInputsForCategory(category) {
+      var priority = priorityForCategory(category) || "Média";
+      var inputs = priorityInputsByLevel[priority] || priorityInputsByLevel["Média"];
+
+      return {
+        priority: priority,
+        impact: inputs.impact,
+        urgency: inputs.urgency
+      };
+    }
+
+    function classifyPriority(impact, urgency, category) {
+      return priorityForCategory(category) ||
+        (priorityMatrix[impact] && priorityMatrix[impact][urgency]) ||
+        "Média";
+    }
     function slaMinutesFor(priority) {
       return slaByPriority[priority] || 480;
     }
@@ -1048,7 +1094,11 @@
     }
 
     function createTicket(payload) {
-      var priority = classifyPriority(payload.impact, payload.urgency);
+      var priority = classifyPriority(
+        payload.impact,
+        payload.urgency,
+        payload.issueCategory || payload.category
+      );
       var now = new Date();
       var slaDeadline = new Date(now.getTime() + slaMinutesFor(priority) * 60000).toISOString();
       return $q.all({
@@ -1181,6 +1231,8 @@
     return {
       statusFlow: statusFlow,
       classifyPriority: classifyPriority,
+      priorityForCategory: priorityForCategory,
+      priorityInputsForCategory: priorityInputsForCategory,
       getSlaDeadline: getSlaDeadline,
       getRemainingSLA: getRemainingSLA,
       getStats: getStats,
@@ -1581,13 +1633,13 @@
           if (!t.resolved_at || !t.sla_deadline) { return false; }
           return new Date(t.resolved_at).getTime() <= new Date(t.sla_deadline).getTime();
         }).length;
-        
+
         var validResolved = resolved.filter(function (t) {
           var mins = getResolutionMinutes(t);
           return mins !== null && isFinite(mins) && mins >= 0;
         });
         var ignoredCount = resolved.length - validResolved.length;
-        
+
         var avgMin = 0;
         var avgHours = 0;
         var medianHours = 0;
@@ -1598,7 +1650,7 @@
         var statusClass = "mttr-status-unknown";
         var outlierWarning = false;
         var outlierText = "";
-        
+
         if (validResolved.length > 0) {
           var minutes = validResolved.map(getResolutionMinutes).filter(function (m) { return m !== null; });
           avgMin = Math.round(average(minutes));
@@ -1607,31 +1659,31 @@
           p90Hours = toHours(percentile(minutes, 90));
           minHours = toHours(Math.min.apply(Math, minutes));
           maxHours = toHours(Math.max.apply(Math, minutes));
-          
+
           var classification = classifyGeneralMttr(avgHours);
           statusLabel = classification.label;
           statusClass = classification.class;
-          
+
           if (validResolved.length >= 3 && maxHours >= 3 * medianHours) {
             outlierWarning = true;
             outlierText = "A média pode estar elevada por um chamado muito antigo. Consulte também a mediana e o P90.";
           }
         }
-        
+
         var byPriority = [];
         var priorities = ["Urgente", "Alta", "Média", "Baixa"];
         priorities.forEach(function (prio) {
           var ticketsByPrio = validResolved.filter(function (t) { return t.priority === prio; });
           byPriority.push(buildMttrGroup(ticketsByPrio, prio, function (h) { return classifyPriorityMttr(prio, h); }));
         });
-        
+
         var bySeverity = [];
         var severities = ["Baixa", "Média", "Alta", "Crítica"];
         severities.forEach(function (sev) {
           var ticketsBySev = validResolved.filter(function (t) { return t.severity === sev; });
           bySeverity.push(buildMttrGroup(ticketsBySev, sev, null));
         });
-        
+
         var last30d = null;
         var thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
         var recentResolved = validResolved.filter(function (t) {
@@ -1730,68 +1782,45 @@
       { value: "Crítica", label: "Crítica - Imediato" }
     ];
 
-    $scope.$watchGroup(["vm.newTicket.impact", "vm.newTicket.urgency"], function (newVals) {
-      if (newVals[0] && newVals[1]) {
-        vm.newTicketPriority = TicketService.classifyPriority(newVals[0], newVals[1]);
+    $scope.$watchGroup(["vm.newTicket.impact", "vm.newTicket.urgency", "vm.newTicket.issueCategory"], function (newVals) {
+      var impact = newVals[0];
+      var urgency = newVals[1];
+      var category = newVals[2];
+
+      if (category) {
+        vm.newTicketPriority = TicketService.classifyPriority(impact, urgency, category);
+      } else if (impact && urgency) {
+        vm.newTicketPriority = TicketService.classifyPriority(impact, urgency);
       } else {
         vm.newTicketPriority = null;
       }
     });
 
-    function computeFlightOnPriority(issueCategory, flightDate) {
-      var base = { impact: "Médio", urgency: "Média" };
-      switch (issueCategory) {
-        case "Alteração/Cancelamento de Voo":
-          base = { impact: "Crítico", urgency: "Crítica" };
-          break;
-        case "Bagagem":
-        case "Check-in/Embarque":
-          base = { impact: "Alto", urgency: "Alta" };
-          break;
-        case "Assistência Especial":
-        case "Outro":
-          base = { impact: "Médio", urgency: "Média" };
-          break;
-        case "Reembolsos e Compensação":
-        case "Achados e Perdidos":
-          base = { impact: "Baixo", urgency: "Baixa" };
-          break;
-      }
-      if (flightDate && issueCategory !== "Reembolsos e Compensação" && issueCategory !== "Achados e Perdidos") {
-        var now = Date.now();
-        var flightMs = new Date(flightDate).getTime();
-        if (isFinite(flightMs)) {
-          var hoursUntil = (flightMs - now) / (1000 * 60 * 60);
-          if (hoursUntil > 0 && hoursUntil < 2) {
-            base.urgency = "Crítica";
-            if (base.impact === "Baixo") { base.impact = "Médio"; }
-          } else if (hoursUntil >= 2 && hoursUntil <= 6) {
-            if (base.urgency === "Baixa" || base.urgency === "Média") {
-              base.urgency = "Alta";
-            }
-          }
-        }
-      }
-      return base;
+    function computeFlightOnPriority(issueCategory) {
+      return TicketService.priorityInputsForCategory(issueCategory || "Outro");
     }
 
     vm.recalcPriority = function () {
       var cat = vm.newTicket.issueCategory;
-      var date = vm.newTicket.flightDate;
+
       if (cat) {
-        var computed = computeFlightOnPriority(cat, date);
+        var computed = computeFlightOnPriority(cat);
         vm.newTicket.impact = computed.impact;
         vm.newTicket.urgency = computed.urgency;
+        vm.newTicketPriority = computed.priority;
       } else {
-        vm.newTicket.impact = "Baixo";
-        vm.newTicket.urgency = "Média";
+        var fallback = TicketService.priorityInputsForCategory("Outro");
+        vm.newTicket.impact = fallback.impact;
+        vm.newTicket.urgency = fallback.urgency;
+        vm.newTicketPriority = fallback.priority;
       }
     };
 
 
-    $scope.$watchGroup(["vm.newTicket.issueCategory", "vm.newTicket.flightDate"], function (newVals) {
+    $scope.$watch("vm.newTicket.issueCategory", function () {
       vm.recalcPriority();
     });
+
     vm.statuses = ["Aberto", "Pendente", "Em Andamento", "Em Espera", "Resolvido", "Fechado"];
     var ROLE_PERMISSIONS = {
       user: {
@@ -2346,13 +2375,12 @@
         vm.newTicket.issueCategory = "Outro";
         vm.newTicket.category = "Outro";
       }
-      if (!vm.newTicket.impact) {
-        vm.newTicket.impact = "Baixo";
-      }
-      if (!vm.newTicket.urgency) {
-        vm.newTicket.urgency = "Média";
-      }
-      vm.newTicketPriority = TicketService.classifyPriority(vm.newTicket.impact, vm.newTicket.urgency);
+
+      var computed = TicketService.priorityInputsForCategory(vm.newTicket.issueCategory);
+
+      vm.newTicket.impact = computed.impact;
+      vm.newTicket.urgency = computed.urgency;
+      vm.newTicketPriority = computed.priority;
     }
 
     vm.createTicket = function () {
@@ -2407,7 +2435,11 @@
       var categoryLabel = String(vm.newTicket.category || "").trim();
       var categoryId = resolveSafeCategoryId(categoryLabel);
 
-      var priority = TicketService.classifyPriority(vm.newTicket.impact, vm.newTicket.urgency);
+      var priority = TicketService.classifyPriority(
+        vm.newTicket.impact,
+        vm.newTicket.urgency,
+        categoryLabel
+      );
       var slaDeadline = TicketService.getSlaDeadline(priority);
 
       var payload = angular.extend({}, vm.newTicket, {
@@ -3254,7 +3286,7 @@
   function uppercaseOnlyDirective() {
     return {
       require: "ngModel",
-      link: function(scope, element, attrs, ctrl) {
+      link: function (scope, element, attrs, ctrl) {
         function toUpper(val) {
           return (typeof val === "string") ? val.toUpperCase() : val;
         }
@@ -3266,10 +3298,10 @@
           }
           return transformed;
         }
-        ctrl.$parsers.push(function(viewValue) {
+        ctrl.$parsers.push(function (viewValue) {
           return applyUpper(viewValue);
         });
-        ctrl.$formatters.push(function(modelValue) {
+        ctrl.$formatters.push(function (modelValue) {
           return toUpper(modelValue);
         });
       }
@@ -3279,7 +3311,7 @@
   function restrictPatternDirective() {
     return {
       require: "ngModel",
-      link: function(scope, element, attrs, ctrl) {
+      link: function (scope, element, attrs, ctrl) {
         var rawPattern = attrs.restrictPattern || "";
         var flags = attrs.restrictFlags || "g";
         var maxLen = attrs.maxLength ? parseInt(attrs.maxLength, 10) : null;
@@ -3308,11 +3340,11 @@
           return cleaned;
         }
 
-        ctrl.$parsers.push(function(viewValue) {
+        ctrl.$parsers.push(function (viewValue) {
           return applySanitize(viewValue);
         });
 
-        ctrl.$formatters.push(function(modelValue) {
+        ctrl.$formatters.push(function (modelValue) {
           return sanitize(modelValue);
         });
       }
@@ -3328,81 +3360,81 @@
       },
       template:
         "<form class='profile-form' name='profileForm' ng-submit='submit()' novalidate>" +
-          "<header class='profile-form-header'>" +
-            "<div>" +
-              "<h4>Dados do perfil</h4>" +
-              "<p>Essas informações ajudam a FlightOn a identificar você e agilizar seus atendimentos.</p>" +
-              "<small class='profile-readonly-note' ng-if='!editing'>Modo visualização. Edite somente quando precisar atualizar seus dados.</small>" +
-              "<small class='profile-readonly-note' ng-if='editing'>Mantenha seus dados atualizados para que a equipe da FlightOn consiga atender seus chamados com mais agilidade.</small>" +
-            "</div>" +
-            "<button type='button' class='ghost-btn profile-edit-btn' ng-if='!editing' ng-click='enableEdit()'>Editar dados do perfil</button>" +
-          "</header>" +
-          "<section class='profile-form-grid'>" +
-            "<div class='profile-field'>" +
-              "<label for='profile-first-name'>Nome legal</label>" +
-              "<input id='profile-first-name' type='text' ng-model='form.legal_first_name' placeholder='Ex: Guilherme' maxlength='80' restrict-pattern=\"[^A-Za-zÀ-ÖØ-öø-ÿ'\\-\\s]\" ng-readonly='!editing' required>" +
-              "<small class='field-hint'>Use o nome conforme documento oficial.</small>" +
-            "</div>" +
-            "<div class='profile-field'>" +
-              "<label for='profile-last-name'>Sobrenome</label>" +
-              "<input id='profile-last-name' type='text' ng-model='form.last_name' placeholder='Ex: Silva' maxlength='80' restrict-pattern=\"[^A-Za-zÀ-ÖØ-öø-ÿ'\\-\\s]\" ng-readonly='!editing' required>" +
-            "</div>" +
-            "<div class='profile-field'>" +
-              "<label for='profile-birth-date'>Data de nascimento</label>" +
-              "<input id='profile-birth-date' type='date' ng-model='form.birth_date' min='1900-01-01' ng-attr-max='{{ maxBirthDate }}' ng-disabled='!editing' required>" +
-            "</div>" +
-            "<div class='profile-field'>" +
-              "<label for='profile-document'>Documento</label>" +
-              "<input id='profile-document' type='text' ng-model='form.document_number' placeholder='CPF: 12345678900' maxlength='11' inputmode='numeric' autocomplete='off' restrict-pattern='[^0-9]' title='Informe apenas os 11 números do CPF' ng-readonly='!editing' required>" +
-              "<small class='field-hint'>Use o documento informado à companhia.</small>" +
-            "</div>" +
-            "<div class='profile-field'>" +
-              "<label for='profile-doc-country'>País emissor do documento</label>" +
-              "<select id='profile-doc-country' ng-model='form.document_country_choice' ng-options='country for country in countryOptions' ng-disabled='!editing' required><option value='' disabled>Selecione o país emissor</option></select>" +
-            "</div>" +
-            "<div class='profile-field' ng-if=\"form.document_country_choice === 'Outro'\">" +
-              "<label for='profile-doc-country-other'>Informe o país emissor</label>" +
-              "<input id='profile-doc-country-other' type='text' ng-model='form.document_country_other' placeholder='Ex: Japão' maxlength='80' restrict-pattern=\"[^A-Za-zÀ-ÖØ-öø-ÿ'\\-\\s]\" ng-readonly='!editing' required>" +
-            "</div>" +
-            "<div class='profile-field'>" +
-              "<label for='profile-nationality'>Nacionalidade</label>" +
-              "<select id='profile-nationality' ng-model='form.nationality_choice' ng-options='nationality for nationality in nationalityOptions' ng-disabled='!editing' required><option value='' disabled>Selecione sua nacionalidade</option></select>" +
-            "</div>" +
-            "<div class='profile-field' ng-if=\"form.nationality_choice === 'Outra'\">" +
-              "<label for='profile-nationality-other'>Informe sua nacionalidade</label>" +
-              "<input id='profile-nationality-other' type='text' ng-model='form.nationality_other' placeholder='Ex: Japonesa' maxlength='80' restrict-pattern=\"[^A-Za-zÀ-ÖØ-öø-ÿ'\\-\\s]\" ng-readonly='!editing' required>" +
-            "</div>" +
-            "<div class='profile-field'>" +
-              "<label for='profile-gender'>Gênero</label>" +
-              "<select id='profile-gender' ng-model='form.gender_choice' ng-options='gender for gender in genderOptions' ng-disabled='!editing' required><option value='' disabled>Selecione o gênero</option></select>" +
-            "</div>" +
-            "<div class='profile-field'>" +
-              "<label for='profile-phone'>Celular</label>" +
-              "<input id='profile-phone' type='tel' ng-model='form.phone_number' placeholder='Ex: (11) 99999-9999' maxlength='20' inputmode='tel' autocomplete='tel' restrict-pattern='[^0-9()+\\-\\s]' ng-readonly='!editing' required>" +
-              "<small class='field-hint'>Use DDD e número. Ex: (11) 99999-9999.</small>" +
-            "</div>" +
-            "<div class='profile-field'>" +
-              "<label for='profile-country'>País</label>" +
-              "<select id='profile-country' ng-model='form.country_choice' ng-options='country for country in countryOptions' ng-disabled='!editing' required><option value='' disabled>Selecione o país</option></select>" +
-            "</div>" +
-            "<div class='profile-field' ng-if=\"form.country_choice === 'Outro'\">" +
-              "<label for='profile-country-other'>Informe o país</label>" +
-              "<input id='profile-country-other' type='text' ng-model='form.country_other' placeholder='Ex: Japão' maxlength='80' restrict-pattern=\"[^A-Za-zÀ-ÖØ-öø-ÿ'\\-\\s]\" ng-readonly='!editing' required>" +
-            "</div>" +
-            "<div class='profile-field'>" +
-              "<label for='profile-state'>Estado</label>" +
-              "<input id='profile-state' type='text' ng-model='form.state' placeholder='Ex: São Paulo' maxlength='80' restrict-pattern=\"[^A-Za-zÀ-ÖØ-öø-ÿ'\\-\\s]\" ng-readonly='!editing' required>" +
-            "</div>" +
-            "<div class='profile-field'>" +
-              "<label for='profile-city'>Cidade</label>" +
-              "<input id='profile-city' type='text' ng-model='form.city' placeholder='Ex: Guarulhos' maxlength='100' restrict-pattern=\"[^A-Za-zÀ-ÖØ-öø-ÿ'\\-\\s]\" ng-readonly='!editing' required>" +
-            "</div>" +
-          "</section>" +
-          "<section class='profile-form-actions' ng-if='editing'>" +
-            "<button type='submit' class='bounce-btn' ng-disabled='saving'>{{ saving ? 'Salvando...' : (isProfileIncomplete ? 'Salvar Perfil' : 'Salvar alterações') }}</button>" +
-            "<button type='button' class='ghost-btn' ng-if='!isProfileIncomplete' ng-click='cancelEdit()' ng-disabled='saving'>Cancelar</button>" +
-          "</section>" +
-          "<p class='profile-form-message' ng-if='profileMessage'>{{ profileMessage }}</p>" +
+        "<header class='profile-form-header'>" +
+        "<div>" +
+        "<h4>Dados do perfil</h4>" +
+        "<p>Essas informações ajudam a FlightOn a identificar você e agilizar seus atendimentos.</p>" +
+        "<small class='profile-readonly-note' ng-if='!editing'>Modo visualização. Edite somente quando precisar atualizar seus dados.</small>" +
+        "<small class='profile-readonly-note' ng-if='editing'>Mantenha seus dados atualizados para que a equipe da FlightOn consiga atender seus chamados com mais agilidade.</small>" +
+        "</div>" +
+        "<button type='button' class='ghost-btn profile-edit-btn' ng-if='!editing' ng-click='enableEdit()'>Editar dados do perfil</button>" +
+        "</header>" +
+        "<section class='profile-form-grid'>" +
+        "<div class='profile-field'>" +
+        "<label for='profile-first-name'>Nome legal</label>" +
+        "<input id='profile-first-name' type='text' ng-model='form.legal_first_name' placeholder='Ex: Guilherme' maxlength='80' restrict-pattern=\"[^A-Za-zÀ-ÖØ-öø-ÿ'\\-\\s]\" ng-readonly='!editing' required>" +
+        "<small class='field-hint'>Use o nome conforme documento oficial.</small>" +
+        "</div>" +
+        "<div class='profile-field'>" +
+        "<label for='profile-last-name'>Sobrenome</label>" +
+        "<input id='profile-last-name' type='text' ng-model='form.last_name' placeholder='Ex: Silva' maxlength='80' restrict-pattern=\"[^A-Za-zÀ-ÖØ-öø-ÿ'\\-\\s]\" ng-readonly='!editing' required>" +
+        "</div>" +
+        "<div class='profile-field'>" +
+        "<label for='profile-birth-date'>Data de nascimento</label>" +
+        "<input id='profile-birth-date' type='date' ng-model='form.birth_date' min='1900-01-01' ng-attr-max='{{ maxBirthDate }}' ng-disabled='!editing' required>" +
+        "</div>" +
+        "<div class='profile-field'>" +
+        "<label for='profile-document'>Documento</label>" +
+        "<input id='profile-document' type='text' ng-model='form.document_number' placeholder='CPF: 12345678900' maxlength='11' inputmode='numeric' autocomplete='off' restrict-pattern='[^0-9]' title='Informe apenas os 11 números do CPF' ng-readonly='!editing' required>" +
+        "<small class='field-hint'>Use o documento informado à companhia.</small>" +
+        "</div>" +
+        "<div class='profile-field'>" +
+        "<label for='profile-doc-country'>País emissor do documento</label>" +
+        "<select id='profile-doc-country' ng-model='form.document_country_choice' ng-options='country for country in countryOptions' ng-disabled='!editing' required><option value='' disabled>Selecione o país emissor</option></select>" +
+        "</div>" +
+        "<div class='profile-field' ng-if=\"form.document_country_choice === 'Outro'\">" +
+        "<label for='profile-doc-country-other'>Informe o país emissor</label>" +
+        "<input id='profile-doc-country-other' type='text' ng-model='form.document_country_other' placeholder='Ex: Japão' maxlength='80' restrict-pattern=\"[^A-Za-zÀ-ÖØ-öø-ÿ'\\-\\s]\" ng-readonly='!editing' required>" +
+        "</div>" +
+        "<div class='profile-field'>" +
+        "<label for='profile-nationality'>Nacionalidade</label>" +
+        "<select id='profile-nationality' ng-model='form.nationality_choice' ng-options='nationality for nationality in nationalityOptions' ng-disabled='!editing' required><option value='' disabled>Selecione sua nacionalidade</option></select>" +
+        "</div>" +
+        "<div class='profile-field' ng-if=\"form.nationality_choice === 'Outra'\">" +
+        "<label for='profile-nationality-other'>Informe sua nacionalidade</label>" +
+        "<input id='profile-nationality-other' type='text' ng-model='form.nationality_other' placeholder='Ex: Japonesa' maxlength='80' restrict-pattern=\"[^A-Za-zÀ-ÖØ-öø-ÿ'\\-\\s]\" ng-readonly='!editing' required>" +
+        "</div>" +
+        "<div class='profile-field'>" +
+        "<label for='profile-gender'>Gênero</label>" +
+        "<select id='profile-gender' ng-model='form.gender_choice' ng-options='gender for gender in genderOptions' ng-disabled='!editing' required><option value='' disabled>Selecione o gênero</option></select>" +
+        "</div>" +
+        "<div class='profile-field'>" +
+        "<label for='profile-phone'>Celular</label>" +
+        "<input id='profile-phone' type='tel' ng-model='form.phone_number' placeholder='Ex: (11) 99999-9999' maxlength='20' inputmode='tel' autocomplete='tel' restrict-pattern='[^0-9()+\\-\\s]' ng-readonly='!editing' required>" +
+        "<small class='field-hint'>Use DDD e número. Ex: (11) 99999-9999.</small>" +
+        "</div>" +
+        "<div class='profile-field'>" +
+        "<label for='profile-country'>País</label>" +
+        "<select id='profile-country' ng-model='form.country_choice' ng-options='country for country in countryOptions' ng-disabled='!editing' required><option value='' disabled>Selecione o país</option></select>" +
+        "</div>" +
+        "<div class='profile-field' ng-if=\"form.country_choice === 'Outro'\">" +
+        "<label for='profile-country-other'>Informe o país</label>" +
+        "<input id='profile-country-other' type='text' ng-model='form.country_other' placeholder='Ex: Japão' maxlength='80' restrict-pattern=\"[^A-Za-zÀ-ÖØ-öø-ÿ'\\-\\s]\" ng-readonly='!editing' required>" +
+        "</div>" +
+        "<div class='profile-field'>" +
+        "<label for='profile-state'>Estado</label>" +
+        "<input id='profile-state' type='text' ng-model='form.state' placeholder='Ex: São Paulo' maxlength='80' restrict-pattern=\"[^A-Za-zÀ-ÖØ-öø-ÿ'\\-\\s]\" ng-readonly='!editing' required>" +
+        "</div>" +
+        "<div class='profile-field'>" +
+        "<label for='profile-city'>Cidade</label>" +
+        "<input id='profile-city' type='text' ng-model='form.city' placeholder='Ex: Guarulhos' maxlength='100' restrict-pattern=\"[^A-Za-zÀ-ÖØ-öø-ÿ'\\-\\s]\" ng-readonly='!editing' required>" +
+        "</div>" +
+        "</section>" +
+        "<section class='profile-form-actions' ng-if='editing'>" +
+        "<button type='submit' class='bounce-btn' ng-disabled='saving'>{{ saving ? 'Salvando...' : (isProfileIncomplete ? 'Salvar Perfil' : 'Salvar alterações') }}</button>" +
+        "<button type='button' class='ghost-btn' ng-if='!isProfileIncomplete' ng-click='cancelEdit()' ng-disabled='saving'>Cancelar</button>" +
+        "</section>" +
+        "<p class='profile-form-message' ng-if='profileMessage'>{{ profileMessage }}</p>" +
         "</form>",
       link: function (scope) {
         var countryOptions = ["Brasil", "Argentina", "Chile", "Uruguai", "Paraguai", "Estados Unidos", "Canada", "Mexico", "Portugal", "Espanha", "Franca", "Alemanha", "Italia", "Reino Unido", "Outro"];
