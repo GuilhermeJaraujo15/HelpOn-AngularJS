@@ -1,0 +1,1006 @@
+<!doctype html>
+<html lang="pt-BR" ng-app="helpOnApp">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HelpOn</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      [ng-cloak],
+      [data-ng-cloak],
+      .ng-cloak {
+        display: none !important;
+      }
+    </style>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body ng-cloak ng-controller="MainController as vm" ng-class="{ 'authenticated-shell': vm.user, 'public-shell': !vm.user }"></body>
+  >
+    <div class="bg-overlay"></div>
+    <section class="auth-screen" ng-if="!vm.user">
+      <div class="auth-card glass">
+        <div class="brand auth-brand">
+          <span class="brand-mark">H</span>
+          <div>
+            <h1>HelpOn</h1>
+            <small>Acesse sua conta do FlightOn</small>
+          </div>
+        </div>
+
+        <p class="auth-subtitle">
+          Acesse com as suas credenciais (e-mail e senha).
+        </p>
+
+        <form class="auth-form" ng-submit="vm.signIn()">
+          <input
+            type="email"
+            ng-model="vm.auth.email"
+            placeholder="email"
+            required
+          />
+          <input
+            type="password"
+            ng-model="vm.auth.password"
+            placeholder="Senha"
+            required
+          />
+          <button type="submit" ng-disabled="vm.auth.loading || vm.authLocked">
+            {{ vm.auth.loading ? 'Autenticando...' : 'Entrar' }}
+          </button>
+        </form>
+
+        <details class="register-box">
+          <summary>Não tem ainda uma Conta? Crie!</summary>
+          <form class="ticket-form register-grid" ng-submit="vm.signUp()">
+            <input
+              type="email"
+              ng-model="vm.register.email"
+              placeholder="E-mail"
+              required
+            />
+            <input
+              type="password"
+              ng-model="vm.register.password"
+              placeholder="Senha"
+              required
+            />
+            <input
+              type="text"
+              ng-model="vm.register.legal_first_name"
+              placeholder="Nome legal"
+              maxlength="80"
+              required
+            />
+            <input
+              type="text"
+              ng-model="vm.register.last_name"
+              placeholder="Sobrenome"
+              maxlength="80"
+              required
+            />
+            <input
+              type="date"
+              ng-model="vm.register.birth_date"
+              ng-attr-max="{{ vm.maxBirthDate }}"
+              required
+            />
+            <input
+              type="text"
+              ng-model="vm.register.document_number"
+              placeholder="CPF: 12345678900"
+              maxlength="11"
+              inputmode="numeric"
+              autocomplete="off"
+              restrict-pattern="[^0-9]"
+              title="Informe apenas os 11 números do CPF"
+              required
+            />
+            <select ng-model="vm.register.document_country" required>
+              <option value="" disabled>Pais emissor</option>
+              <option value="Brasil">Brasil</option>
+              <option value="Argentina">Argentina</option>
+              <option value="Chile">Chile</option>
+              <option value="Uruguai">Uruguai</option>
+              <option value="Paraguai">Paraguai</option>
+              <option value="Estados Unidos">Estados Unidos</option>
+              <option value="Canada">Canada</option>
+              <option value="Mexico">Mexico</option>
+              <option value="Portugal">Portugal</option>
+              <option value="Espanha">Espanha</option>
+              <option value="Franca">Franca</option>
+              <option value="Alemanha">Alemanha</option>
+              <option value="Italia">Italia</option>
+              <option value="Reino Unido">Reino Unido</option>
+              <option value="Outro">Outro</option>
+            </select>
+            <select ng-model="vm.register.nationality" required>
+              <option value="" disabled>Nacionalidade</option>
+              <option value="Brasileira">Brasileira</option>
+              <option value="Argentina">Argentina</option>
+              <option value="Chilena">Chilena</option>
+              <option value="Uruguaia">Uruguaia</option>
+              <option value="Paraguaia">Paraguaia</option>
+              <option value="Americana">Americana</option>
+              <option value="Canadense">Canadense</option>
+              <option value="Mexicana">Mexicana</option>
+              <option value="Portuguesa">Portuguesa</option>
+              <option value="Espanhola">Espanhola</option>
+              <option value="Francesa">Francesa</option>
+              <option value="Alema">Alema</option>
+              <option value="Italiana">Italiana</option>
+              <option value="Britanica">Britanica</option>
+              <option value="Outra">Outra</option>
+            </select>
+            <select ng-model="vm.register.gender" required>
+              <option value="" disabled selected>Gênero</option>
+              <option value="Feminino">Feminino</option>
+              <option value="Masculino">Masculino</option>
+            </select>
+            <input
+              type="tel"
+              ng-model="vm.register.phone_number"
+              placeholder="Celular"
+              maxlength="20"
+              inputmode="tel"
+              required
+            />
+            <select ng-model="vm.register.country" required>
+              <option value="" disabled>Pais</option>
+              <option value="Brasil">Brasil</option>
+              <option value="Argentina">Argentina</option>
+              <option value="Chile">Chile</option>
+              <option value="Uruguai">Uruguai</option>
+              <option value="Paraguai">Paraguai</option>
+              <option value="Estados Unidos">Estados Unidos</option>
+              <option value="Canada">Canada</option>
+              <option value="Mexico">Mexico</option>
+              <option value="Portugal">Portugal</option>
+              <option value="Espanha">Espanha</option>
+              <option value="Franca">Franca</option>
+              <option value="Alemanha">Alemanha</option>
+              <option value="Italia">Italia</option>
+              <option value="Reino Unido">Reino Unido</option>
+              <option value="Outro">Outro</option>
+            </select>
+            <input
+              type="text"
+              ng-model="vm.register.state"
+              placeholder="Estado"
+              maxlength="80"
+              required
+            />
+            <input
+              type="text"
+              ng-model="vm.register.city"
+              placeholder="Cidade"
+              maxlength="100"
+              required
+            />
+            <button
+              type="submit"
+              class="bounce-btn"
+              ng-disabled="vm.auth.loading || vm.authLocked"
+            >
+              Registrar
+            </button>
+          </form>
+        </details>
+
+        <p class="lock-note" ng-if="vm.authLocked">
+          Muitas tentativas falhas. Aguarde {{ vm.authLockRemaining }}s para
+          nova tentativa.
+        </p>
+        <section class="message-bar glass" ng-if="vm.message">
+          {{ vm.message }}
+        </section>
+      </div>
+    </section>
+
+    <div
+      class="app-shell"
+      ng-if="vm.user"
+      ng-class="{ collapsed: vm.isSidebarCollapsed }"
+    >
+      <aside
+        class="sidebar glass"
+        ng-class="{ collapsed: vm.isSidebarCollapsed }"
+      >
+        <div class="brand" ng-if="!vm.isSidebarCollapsed">
+          <span class="brand-mark">H</span>
+          <div>
+            <h1>HelpOn</h1>
+            <small>Service Desk 2026</small>
+          </div>
+        </div>
+        <div class="brand brand-collapsed" ng-if="vm.isSidebarCollapsed">
+          <span class="brand-mark brand-mark-collapsed">H</span>
+        </div>
+
+        <nav class="menu">
+          <a
+            href="#!/dashboard"
+            class="menu-item"
+            ng-class="{ active: vm.currentRoute === 'dashboard' }"
+          >
+            <span class="menu-icon" aria-hidden="true">◫</span>
+            <span class="menu-label"
+              >{{ vm.isUser() ? 'Início' : 'Dashboard' }}</span
+            >
+          </a>
+          <a
+            href="#!/tickets"
+            class="menu-item"
+            ng-class="{ active: vm.currentRoute === 'tickets' }"
+          >
+            <span class="menu-icon" aria-hidden="true">◧</span>
+            <span class="menu-label">Chamados</span>
+          </a>
+          <a
+            href="#!/archived"
+            class="menu-item"
+            ng-if="vm.isAdmin() || vm.isAgent()"
+            ng-class="{ active: vm.currentRoute === 'archived' }"
+          >
+            <span class="menu-icon" aria-hidden="true">▤</span>
+            <span class="menu-label">Arquivados</span>
+          </a>
+          <a
+            href="#!/complete-profile"
+            class="menu-item"
+            ng-class="{ active: vm.currentRoute === 'complete-profile' }"
+          >
+            <span class="menu-icon" aria-hidden="true">◯</span>
+            <span class="menu-label">Perfil</span>
+          </a>
+        </nav>
+
+        <div class="auth-box" ng-if="vm.user && !vm.isSidebarCollapsed">
+          <h3>Conta</h3>
+          <p>{{ vm.user.email }}</p>
+          <small ng-if="vm.profile && vm.profile.customer_category"
+            >Categoria: {{ vm.profile.customer_category }}</small
+          >
+          <button type="button" ng-click="vm.signOut()">Sair</button>
+        </div>
+
+        <button class="toggle-btn" type="button" ng-click="vm.toggleSidebar()">
+          <span class="toggle-icon" aria-hidden="true"
+            >{{ vm.isSidebarCollapsed ? '»' : '«' }}</span
+          >
+          <span class="toggle-label"
+            >{{ vm.isSidebarCollapsed ? 'Expandir' : 'Recolher' }}</span
+          >
+        </button>
+      </aside>
+
+      <main class="main-content">
+        <header class="topbar glass">
+          <div>
+            <h2>{{ vm.viewTitle }}</h2>
+          </div>
+          <span class="clock">{{ vm.now | date:'dd/MM/yyyy HH:mm:ss' }}</span>
+          <div class="topbar-actions">
+            <div class="user-actions-container">
+              <div class="notif-wrap">
+                <button
+                  type="button"
+                  class="notif-bell"
+                  ng-class="{ 'bell-ring': vm.isNewNotification }"
+                  ng-click="vm.toggleNotifications()"
+                  aria-label="Notificações"
+                >
+                  <span class="notif-icon" aria-hidden="true">🔔</span>
+                  <span class="notif-count" ng-if="vm.unreadNotifications"
+                    >{{ vm.unreadNotifications }}</span
+                  >
+                </button>
+                <div
+                  class="notif-dropdown glass"
+                  ng-show="vm.notificationsOpen"
+                >
+                  <div class="notif-header">
+                    <strong class="notif-title-text">Notificações</strong>
+                    <button
+                      type="button"
+                      class="notif-trash"
+                      ng-click="vm.clearAllNotifications()"
+                      aria-label="Limpar notificações"
+                      title="Limpar todas"
+                    >
+                      🗑️
+                    </button>
+                    <button
+                      type="button"
+                      class="notif-markall"
+                      ng-click="vm.markAllNotificationsRead()"
+                    >
+                      Marcar tudo como lido
+                    </button>
+                  </div>
+                  <div class="notif-list">
+                    <button
+                      type="button"
+                      class="notif-item"
+                      ng-repeat="n in vm.notifications track by n.id"
+                      ng-class="{ unread: !n.is_read }"
+                      ng-click="vm.markNotificationRead(n)"
+                    >
+                      <div class="notif-title">{{ n.title }}</div>
+                      <div class="notif-content">{{ n.content }}</div>
+                      <small class="notif-meta"
+                        >{{ n.created_at | date:'dd/MM HH:mm' }}</small
+                      >
+                    </button>
+                    <div class="notif-empty" ng-if="!vm.notifications.length">
+                      <div class="notif-empty-center">
+                        Sua caixa de mensagens está vazia!
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <span
+                class="role-badge"
+                ng-class="{ 'role-admin': vm.isAdmin(), 'role-agent': vm.isAgent(), 'role-user': vm.isUser() }"
+                >{{ vm.roleBadgeLabel() }}</span
+              >
+            </div>
+            <span
+              class="status-dot"
+              ng-class="{ online: vm.connectionOk, offline: !vm.connectionOk }"
+            ></span>
+          </div>
+        </header>
+
+<section class="toast-stack" ng-cloak ng-if="vm.toasts && vm.toasts.length">
+  <article class="toast glass" ng-repeat="t in vm.toasts track by t.id" ng-class="'toast-' + t.type">
+    <strong class="toast-title" ng-bind="t.title"></strong>
+    <p class="toast-content" ng-bind="t.content"></p>
+  </article>
+</section>
+
+        <section class="message-bar glass" ng-if="vm.message">
+          {{ vm.message }}
+        </section>
+        <section ng-view class="route-container"></section>
+      </main>
+    </div>
+
+    <script type="text/ng-template" id="dashboard.html">
+      <section class="welcome-dashboard" ng-if="vm.isUser()">
+        <section class="welcome-hero glass">
+          <div class="welcome-hero-copy">
+            <p class="welcome-eyebrow">Canal oficial de atendimento FlightOn</p>
+            <h1 class="welcome-title">Bem-vindo ao HelpOn</h1>
+            <p class="welcome-lead">
+              Centralize suas solicitações em um fluxo claro, rastreável e organizado.
+              Abra chamados sobre sua jornada com a FlightOn, acompanhe cada etapa e receba
+              atualizações com mais agilidade.
+            </p>
+            <div class="welcome-actions">
+              <a class="welcome-primary-action" href="#!/tickets">Abrir ou acompanhar chamado</a>
+            </div>
+          </div>
+
+          <div class="welcome-hero-panel">
+            <span class="welcome-panel-kicker">Atendimento mais simples</span>
+            <strong>Problemas com voo, bagagem, check-in, reembolso, assistência ou achados e perdidos ficam em um só lugar.</strong>
+            <p>O HelpOn ajuda a transformar cada solicitação em um histórico de atendimento mais rápido, eficiente e fácil de consultar.</p>
+          </div>
+        </section>
+
+        <section class="welcome-feature-grid">
+          <article class="welcome-feature-card glass">
+            <span class="welcome-card-index">01</span>
+            <h3>Abra sua solicitação</h3>
+            <p>Registre o assunto, dados do voo e detalhes importantes para que a equipe da FlightOn entenda o contexto desde o início.</p>
+          </article>
+          <article class="welcome-feature-card glass">
+            <span class="welcome-card-index">02</span>
+            <h3>Acompanhe cada etapa</h3>
+            <p>Veja o andamento do chamado e mantenha suas informações reunidas em uma linha de atendimento organizada.</p>
+          </article>
+          <article class="welcome-feature-card glass">
+            <span class="welcome-card-index">03</span>
+            <h3>Receba respostas com mais clareza</h3>
+            <p>Concentre atualizações, notificações e retornos em um canal oficial, sem perder mensagens relevantes.</p>
+          </article>
+          <article class="welcome-feature-card glass">
+            <span class="welcome-card-index">04</span>
+            <h3>Tenha histórico do atendimento</h3>
+            <p>Consulte solicitações anteriores e preserve registros úteis para novas interações com a companhia.</p>
+          </article>
+        </section>
+
+        <section class="welcome-use-cases glass">
+          <div>
+            <p class="welcome-eyebrow">Quando usar o HelpOn?</p>
+            <h2>Use sempre que precisar de suporte formal da FlightOn.</h2>
+          </div>
+          <div class="welcome-use-case-list">
+            <span>Alterações, atrasos ou cancelamentos de voo</span>
+            <span>Bagagem extraviada, danificada ou atrasada</span>
+            <span>Dúvidas sobre check-in, embarque e documentação</span>
+            <span>Reembolso, crédito, cobrança ou comprovantes</span>
+            <span>Assistência especial, atendimento e achados e perdidos</span>
+          </div>
+        </section>
+      </section>
+
+      <section class="dashboard-layout" ng-if="vm.isAdmin() || vm.isAgent()">
+        <section class="grid-kpi">
+          <article class="kpi-card glass kpi-mttr"><h3>MTTR</h3><p class="metric">{{ vm.kpis.mttr }}h</p><small>Tempo médio de resolução</small></article>
+          <article class="kpi-card glass kpi-sla"><h3>SLA Compliance</h3><p class="metric">{{ vm.kpis.slaCompliance }}%</p><small>Resolvidos dentro do prazo</small></article>
+          <article class="kpi-card glass kpi-backlog"><h3>Backlog</h3><p class="metric">{{ vm.kpis.backlog }}</p><small>Chamados abertos e em progresso</small></article>
+          <article class="kpi-card glass kpi-resolved"><h3>Fechados</h3><p class="metric">{{ vm.kpis.closedCount }}</p><small>Chamados concluídos com sucesso</small></article>
+        </section>
+
+        <button type="button" class="mttr-toggle glass" ng-click="vm.toggleMttrAnalysis()" ng-class="{ open: vm.showMttrAnalysis }" ng-if="vm.kpis.mttrDetails">
+          <span class="mttr-toggle-arrow">▾</span>
+          <div class="mttr-toggle-text">
+            <strong>Análise do MTTR</strong>
+            <small>Média, mediana, P90 e tamanho da amostra</small>
+          </div>
+        </button>
+
+        <section class="glass panel mttr-panel" ng-if="vm.showMttrAnalysis && vm.kpis.mttrDetails">
+          <div class="mttr-overview-grid">
+            <div class="mttr-mini-card glass">
+              <small>Média</small>
+              <p class="mttr-metric">{{ vm.kpis.mttrDetails.averageHours }}h</p>
+            </div>
+            <div class="mttr-mini-card glass">
+              <small>Mediana</small>
+              <p class="mttr-metric">{{ vm.kpis.mttrDetails.medianHours }}h</p>
+            </div>
+            <div class="mttr-mini-card glass">
+              <small>P90</small>
+              <p class="mttr-metric">{{ vm.kpis.mttrDetails.p90Hours }}h</p>
+            </div>
+            <div class="mttr-mini-card glass">
+              <small>Amostra</small>
+              <p class="mttr-metric">{{ vm.kpis.mttrDetails.sampleSize }}</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="charts-grid">
+        <article class="glass panel">
+          <h3>Compliance por Severidade</h3>
+          <svg viewBox="0 0 420 160" class="mini-chart">
+            <line x1="20" y1="130" x2="405" y2="130"></line>
+            <g ng-repeat="item in vm.slaSeries track by item.label">
+              <rect ng-attr-x="{{ 35 + ($index * 90) }}" ng-attr-y="{{ 130 - item.value }}" width="52" ng-attr-height="{{ item.value }}" rx="8"></rect>
+              <text ng-attr-x="{{ 61 + ($index * 90) }}" y="148">{{ item.label }}</text>
+            </g>
+          </svg>
+        </article>
+
+        <article class="glass panel">
+          <h3>Gatilhos Recentes</h3>
+          <ul class="automation-list">
+            <li ng-repeat="event in vm.automationLog | limitTo: 8 track by $index"><strong>{{ event.ticketCode }}</strong> - {{ event.message }}</li>
+            <li ng-if="!vm.automationLog.length">Nenhum gatilho executado.</li>
+          </ul>
+        </article>
+      </section>
+      </section>
+    </script>
+
+    <script type="text/ng-template" id="tickets.html">
+      <section class="insights-grid" ng-if="vm.isAdmin() || vm.isAgent()" ng-class="{ bump: vm.insightsBump }">
+        <article class="insights-card glass insights-blue">
+          <h4>Total</h4>
+          <p class="insights-value">{{ vm.stats.total }}</p>
+          <small>Chamados no escopo</small>
+        </article>
+        <article class="insights-card glass insights-green">
+          <h4>SLA OK</h4>
+          <p class="insights-value">{{ vm.stats.slaOk }}</p>
+          <small>Inclui pausados</small>
+        </article>
+        <article class="insights-card glass insights-red">
+          <h4>SLA Breached</h4>
+          <p class="insights-value">{{ vm.stats.slaBreached }}</p>
+          <small>Fora do prazo</small>
+        </article>
+        <article class="insights-card glass insights-neutral">
+          <h4>Abertos</h4>
+          <p class="insights-value">{{ (vm.stats.byStatus['Aberto'] || 0) + (vm.stats.byStatus['Pendente'] || 0) + (vm.stats.byStatus['Em Andamento'] || 0) + (vm.stats.byStatus['Em Espera'] || 0) }}</p>
+          <small>Por status (filtro aplicado)</small>
+        </article>
+      </section>
+
+      <section class="glass panel" ng-if="vm.canCreateTickets()">
+        <h3>Novo Chamado</h3>
+        <form name="newTicketForm" class="ticket-form" ng-submit="vm.createTicket()">
+          <div>
+            <label for="flt-title">Assunto</label>
+            <input id="flt-title" type="text" ng-model="vm.newTicket.title" placeholder="Ex: Bagagem extraviada no voo FON1234" maxlength="200" required autocomplete="off">
+          </div>
+
+          <div>
+            <label for="flt-pnr">Localizador (PNR)</label>
+            <input id="flt-pnr" type="text" ng-model="vm.newTicket.bookingReference" placeholder="ABC123" maxlength="6" uppercase-only restrict-pattern="[^A-Za-z0-9]" inputmode="text" autocomplete="off" title="Use 6 caracteres: letras e números">
+          </div>
+
+          <div>
+            <label for="flt-flight">Número do Voo</label>
+            <input id="flt-flight" type="text" ng-model="vm.newTicket.flightNumber" placeholder="FON1234" maxlength="7" uppercase-only restrict-pattern="[^A-Za-z0-9]" inputmode="text" autocomplete="off" title="Use o padrão FON seguido de 3 ou 4 números">
+          </div>
+
+          <div>
+            <label for="flt-date">Data do Voo</label>
+            <input id="flt-date" type="date" ng-model="vm.newTicket.flightDate" min="1900-01-01" max="2030-12-31">
+          </div>
+
+          <div>
+            <label for="flt-origin">Origem (IATA)</label>
+            <input id="flt-origin" type="text" ng-model="vm.newTicket.originAirport" placeholder="GRU" maxlength="3" uppercase-only restrict-pattern="[^A-Za-z]" inputmode="text" autocomplete="off" title="Código IATA com 3 letras">
+          </div>
+
+          <div>
+            <label for="flt-dest">Destino (IATA)</label>
+            <input id="flt-dest" type="text" ng-model="vm.newTicket.destinationAirport" placeholder="JFK" maxlength="3" uppercase-only restrict-pattern="[^A-Za-z]" inputmode="text" autocomplete="off" title="Código IATA com 3 letras">
+          </div>
+
+          <div>
+            <label for="flt-pax">Passageiro</label>
+            <input id="flt-pax" type="text" ng-model="vm.newTicket.passengerName" placeholder="Nome completo" maxlength="100" restrict-pattern="[^A-Za-zÀ-ÖØ-öø-ÿ'\-\s]" autocomplete="name" required>
+          </div>
+
+          <div>
+            <label for="flt-email">E-mail</label>
+            <input id="flt-email" type="email" ng-model="vm.newTicket.contactEmail" placeholder="Ex: joao@email.com" maxlength="120" autocomplete="email" required>
+          </div>
+
+          <div>
+            <label for="flt-phone">Telefone</label>
+            <input id="flt-phone" type="tel" ng-model="vm.newTicket.contactPhone" placeholder="Ex: (11) 99999-9999" maxlength="20" inputmode="tel" autocomplete="tel" restrict-pattern="[^0-9()+\-\s]" required>
+          </div>
+
+
+
+          <div>
+            <label for="flt-cat">Categoria</label>
+            <select id="flt-cat" ng-model="vm.newTicket.issueCategory" ng-change="vm.newTicket.category = vm.newTicket.issueCategory; vm.recalcPriority()">
+              <option value="" disabled selected>Selecione</option>
+              <option value="Alteração/Cancelamento de Voo">Alteração / Cancelamento de Voo</option>
+              <option value="Bagagem">Bagagem</option>
+              <option value="Reembolsos e Compensação">Reembolsos e Compensação</option>
+              <option value="Assistência Especial">Assistência Especial</option>
+              <option value="Check-in/Embarque">Check-in / Embarque</option>
+              <option value="Achados e Perdidos">Achados e Perdidos</option>
+              <option value="Outro">Outro</option>
+            </select>
+          </div>
+
+          <div ng-if="vm.newTicket.issueCategory === 'Outro'">
+            <label for="flt-other-desc">Descreva a categoria</label>
+            <input id="flt-other-desc" type="text" ng-model="vm.newTicket.otherCategoryDescription" placeholder="Descreva brevemente" maxlength="200">
+          </div>
+
+          <div>
+            <label for="flt-queue">Fila</label>
+            <select id="flt-queue" ng-model="vm.newTicket.queue_id" ng-options="q.id as q.name for q in vm.queues">
+              <option value="" disabled selected>Automática</option>
+            </select>
+          </div>
+
+          <!-- Bagagem -->
+          <div ng-if="vm.newTicket.issueCategory === 'Bagagem'">
+            <label for="flt-bag-type">Tipo de Ocorrência</label>
+            <select id="flt-bag-type" ng-model="vm.newTicket.baggageType">
+              <option value="" disabled selected>Selecione</option>
+              <option value="missing">Extraviada (AHL)</option>
+              <option value="damaged">Danificada (PIR)</option>
+              <option value="delayed">Retida / Atrasada</option>
+              <option value="checked">Peso / Excesso</option>
+              <option value="carry_on">Restrição de Mão</option>
+            </select>
+          </div>
+          <div ng-if="vm.newTicket.issueCategory === 'Bagagem'">
+            <label for="flt-bag-tag">Tag de Bagagem</label>
+            <input id="flt-bag-tag" type="text" ng-model="vm.newTicket.baggageTagNumber" placeholder="Ex: 1234567890" maxlength="10" inputmode="numeric" restrict-pattern="[^0-9]" title="Use apenas números, entre 6 e 10 dígitos">
+          </div>
+
+          <!-- Assistência Especial -->
+          <div ng-if="vm.newTicket.issueCategory === 'Assistência Especial'">
+            <label for="flt-assist-type">Assistência (SSR)</label>
+            <select id="flt-assist-type" ng-model="vm.newTicket.assistanceType">
+              <option value="" disabled selected>Selecione</option>
+              <option value="WCHC">Cadeira de Rodas - até o assento (WCHC)</option>
+              <option value="WCHR">Cadeira de Rodas - até a aeronave (WCHR)</option>
+              <option value="MEDA">Assistência Médica (MEDA)</option>
+              <option value="UMNR">Menor Desacompanhado (UMNR)</option>
+              <option value="BLND">Deficiência Visual (BLND)</option>
+              <option value="DEAF">Deficiência Auditiva (DEAF)</option>
+              <option value="SVAN">Animal de Serviço (SVAN)</option>
+            </select>
+          </div>
+          <div ng-if="vm.newTicket.issueCategory === 'Assistência Especial'">
+            <label for="flt-assist-detail">Detalhes</label>
+            <input id="flt-assist-detail" type="text" ng-model="vm.newTicket.assistanceDetail" placeholder="Ex: cadeira própria, acompanhante" maxlength="200">
+          </div>
+
+          <!-- Alteração / Cancelamento -->
+          <div ng-if="vm.newTicket.issueCategory === 'Alteração/Cancelamento de Voo'">
+            <label for="flt-cancel-reason">Motivo</label>
+            <select id="flt-cancel-reason" ng-model="vm.newTicket.cancellationReason">
+              <option value="" disabled selected>Selecione</option>
+              <option value="weather">Meteorologia (Extraordinário)</option>
+              <option value="mechanical">Técnico / Manutenção</option>
+              <option value="crew">Restrição de Tripulação</option>
+              <option value="air_traffic">Congestionamento / Slot</option>
+              <option value="passenger">Solicitação do Passageiro</option>
+              <option value="airline">Decisão Operacional</option>
+            </select>
+          </div>
+          <div ng-if="vm.newTicket.issueCategory === 'Alteração/Cancelamento de Voo'">
+            <label for="flt-alt">Alternativa Preferida</label>
+            <input id="flt-alt" type="text" ng-model="vm.newTicket.preferredAlternative" placeholder="Ex: FON5678 - 12/05" maxlength="200">
+          </div>
+
+          <!-- Reembolsos -->
+          <div ng-if="vm.newTicket.issueCategory === 'Reembolsos e Compensação'">
+            <label for="flt-refund-type">Tipo de Reembolso</label>
+            <select id="flt-refund-type" ng-model="vm.newTicket.refundType">
+              <option value="" disabled selected>Selecione</option>
+              <option value="full">Integral</option>
+              <option value="partial">Parcial</option>
+              <option value="voucher">Voucher / Crédito</option>
+              <option value="miles">Devolução em Milhas</option>
+              <option value="ec261">Compensação Regulatória</option>
+            </select>
+          </div>
+          <div ng-if="vm.newTicket.issueCategory === 'Reembolsos e Compensação'">
+            <label for="flt-pay">Pagamento Original</label>
+            <input id="flt-pay" type="text" ng-model="vm.newTicket.originalPaymentMethod" placeholder="Ex: Cartão final 1234" maxlength="80" title="Não informe o número completo do cartão">
+          </div>
+
+          <!-- Check-in -->
+          <div ng-if="vm.newTicket.issueCategory === 'Check-in/Embarque'">
+            <label for="flt-checkin">Canal de Check-in</label>
+            <select id="flt-checkin" ng-model="vm.newTicket.checkInMethod">
+              <option value="" disabled selected>Selecione</option>
+              <option value="online">Online / App</option>
+              <option value="kiosk">Quiosque</option>
+              <option value="counter">Balcão</option>
+              <option value="curbside">Curb Side / Fast Bag</option>
+            </select>
+          </div>
+          <div ng-if="vm.newTicket.issueCategory === 'Check-in/Embarque'">
+            <label for="flt-boarding">Problema no Cartão</label>
+            <input id="flt-boarding" type="text" ng-model="vm.newTicket.boardingPassIssue" placeholder="Ex: erro ao gerar QR Code" maxlength="200">
+          </div>
+
+          <!-- Achados e Perdidos -->
+          <div ng-if="vm.newTicket.issueCategory === 'Achados e Perdidos'">
+            <label for="flt-item">Item</label>
+            <input id="flt-item" type="text" ng-model="vm.newTicket.itemDescription" placeholder="Ex: mochila preta, marca X" maxlength="200">
+          </div>
+          <div ng-if="vm.newTicket.issueCategory === 'Achados e Perdidos'">
+            <label for="flt-loc">Local Perdido</label>
+            <input id="flt-loc" type="text" ng-model="vm.newTicket.locationLost" placeholder="Ex: Gate A3, Sala 12" maxlength="200">
+          </div>
+
+          <!-- Prioridade calculada (SLA Engine) -->
+          <div class="priority-display" ng-if="vm.newTicketPriority">
+            <label>Prioridade calculada:</label>
+            <span class="badge" ng-class="vm.priorityClass(vm.newTicketPriority)">{{ vm.newTicketPriority }}</span>
+          </div>
+
+          <div>
+            <label for="flt-desc">Descrição</label>
+            <textarea id="flt-desc" ng-model="vm.newTicket.description" placeholder="Detalhes adicionais do problema" maxlength="500" required></textarea>
+          </div>
+
+          <button type="submit" class="ticket-submit-btn" ng-class="{ processing: vm.loadingCreate }" ng-disabled="vm.loadingCreate">
+            {{ vm.loadingCreate ? 'Salvando...' : 'Abrir chamado' }}
+          </button>
+        </form>
+      </section>
+
+      <section class="glass panel queue-filter-bar">
+        <h3>Filtro de Fila</h3>
+        <select ng-model="vm.selectedQueue" ng-change="vm.onQueueFilterChange()" class="queue-filter-select">
+          <option value="">Todas as filas</option>
+          <option ng-repeat="q in vm.queues track by q.id" value="{{ q.id }}">{{ q.name }}</option>
+        </select>
+      </section>
+
+      <section class="kanban" ng-class="{ bump: vm.kanbanBump }">
+        <article class="kanban-column glass" ng-repeat="status in vm.visibleStatuses track by status">
+          <header><h4>{{ status }}</h4><span>{{ (vm.ticketsByStatus[status] || []).length }}</span></header>
+          <div class="kanban-empty" ng-if="(vm.ticketsByStatus[status] || []).length === 0">
+            <div class="kanban-empty-icon" aria-hidden="true">✓</div>
+            <p>Everything's fine here!</p>
+            <small>Nenhum ticket nesta coluna.</small>
+          </div>
+          <div class="ticket-card" ng-repeat="ticket in vm.ticketsByStatus[status] track by ticket.id" ng-class="[vm.priorityClass(ticket.priority), vm.severityClass(ticket.severity)]">
+            <div class="ticket-head">
+              <strong>#{{ ticket.ticket_code || ticket.id }}</strong>
+              <div class="ticket-head-actions">
+                <button type="button" class="requester-info-btn" ng-if="vm.isAdmin() || vm.isAgent()" ng-click="vm.toggleRequesterInfo(ticket, $event)" aria-label="Ver informações do requerente" title="Informações do requerente"></button>
+                <button type="button" class="ticket-info-btn" ng-if="vm.isAdmin() || vm.isAgent()" ng-click="vm.toggleTicketInfo(ticket, $event)" aria-label="Ver dados do chamado" title="Dados do chamado">ⓘ</button>
+                <span class="badge">{{ ticket.priority }}</span>
+              </div>
+            </div>
+            <p class="ticket-title">{{ ticket.title }}</p>
+            <small>{{ ticket.category_name }} | {{ ticket.requester_name }}</small>
+            <p class="ticket-description-preview" ng-if="ticket.description">{{ ticket.description }}</p>
+            <div class="queue-tag">{{ ticket.queue_name || 'No queue' }}</div>
+            <div class="assignee-tag">{{ ticket.assigned_to.full_name || 'No assignee' }}</div>
+            <div class="ticket-meta"><span>SLA:</span><sla-badge ticket="ticket" now="vm.slaNow"></sla-badge></div>
+
+            <section class="ticket-info-popover glass" ng-if="ticket._showTicketInfo && (vm.isAdmin() || vm.isAgent())">
+              <header class="ticket-info-header">
+                <div>
+                  <strong>Dados do chamado</strong>
+                  <small>Informações essenciais para atendimento</small>
+                </div>
+                <button type="button" class="requester-info-close" ng-click="vm.closeTicketInfo(ticket)" aria-label="Fechar dados do chamado">&times;</button>
+              </header>
+
+              <div class="ticket-info-grid">
+                <div class="ticket-info-row">
+                  <span>Assunto</span>
+                  <strong>{{ vm.ticketSubjectLabel(ticket) }}</strong>
+                </div>
+                <div class="ticket-info-row">
+                  <span>Descrição</span>
+                  <strong class="ticket-info-description">{{ vm.ticketDescriptionLabel(ticket) }}</strong>
+                </div>
+                <div class="ticket-info-row">
+                  <span>E-mail</span>
+                  <strong>{{ vm.ticketEmailLabel(ticket) }}</strong>
+                </div>
+              </div>
+            </section>
+
+            <section class="requester-info-popover glass" ng-if="ticket._showRequesterInfo && (vm.isAdmin() || vm.isAgent())">
+              <header class="requester-info-header">
+                <div>
+                  <strong>{{ ticket.requester_profile.full_name || ticket.requester_name || 'Requerente' }}</strong>
+                  <small>Dados do perfil do solicitante</small>
+                </div>
+                <button type="button" class="requester-info-close" ng-click="vm.closeRequesterInfo(ticket)" aria-label="Fechar informações">&times;</button>
+              </header>
+
+              <div class="requester-info-grid" ng-if="ticket.requester_profile">
+                <div class="requester-info-row">
+                  <span>Telefone</span>
+                  <strong>{{ ticket.requester_profile.phone_number || 'Não informado' }}</strong>
+                </div>
+                <div class="requester-info-row">
+                  <span>Documento</span>
+                  <strong>{{ ticket.requester_profile.document_number || 'Não informado' }}</strong>
+                </div>
+                <div class="requester-info-row">
+                  <span>País emissor</span>
+                  <strong>{{ ticket.requester_profile.document_country || 'Não informado' }}</strong>
+                </div>
+                <div class="requester-info-row">
+                  <span>Nacionalidade</span>
+                  <strong>{{ ticket.requester_profile.nationality || 'Não informado' }}</strong>
+                </div>
+                <div class="requester-info-row">
+                  <span>Localidade</span>
+                  <strong>{{ vm.requesterLocation(ticket) }}</strong>
+                </div>
+                <div class="requester-info-row">
+                  <span>Gênero</span>
+                  <strong>{{ ticket.requester_profile.gender || 'Não informado' }}</strong>
+                </div>
+                <div class="requester-info-row">
+                  <span>ID interno do perfil no DB</span>
+                  <strong>{{ vm.requesterShortId(ticket) }}</strong>
+                </div>
+              </div>
+
+              <p class="requester-info-empty" ng-if="!ticket.requester_profile">
+                Perfil detalhado não encontrado para este requerente.
+              </p>
+            </section>
+
+            <div class="ticket-actions">
+              <button type="button" class="bounce-btn" ng-if="vm.permissions.canAssign && !ticket.assigned_to.id" ng-click="vm.claimTicket(ticket)" ng-disabled="ticket._busy">{{ ticket._busy ? '...' : 'Claim' }}</button>
+              <button type="button" class="ghost-btn" ng-if="vm.permissions.canAssign && ticket.assigned_to.id === vm.user.id" ng-click="vm.releaseTicket(ticket)" ng-disabled="ticket._busy">{{ ticket._busy ? '...' : 'Release' }}</button>
+              <button type="button" class="ghost-btn" ng-click="vm.toggleTicketDetails(ticket)">{{ vm.activeTicketId === ticket.id ? 'Ocultar detalhes' : 'Detalhes' }}</button>
+              <button type="button" ng-if="ticket.status !== 'Fechado' && vm.permissions.canAdvanceStatus" ng-click="vm.advanceStatus(ticket)" ng-disabled="ticket._busy">{{ ticket._busy ? '...' : 'Avançar' }}</button>
+              <button type="button" class="ghost-btn" ng-if="ticket.status === 'Fechado' && vm.permissions.canAdvanceStatus" ng-click="vm.reopenTicket(ticket)" ng-disabled="ticket._busy">{{ ticket._busy ? '...' : 'Reabrir' }}</button>
+              <button type="button" class="ghost-btn" ng-click="vm.editTicket(ticket)">Editar</button>
+              <button type="button" class="danger-btn" ng-if="vm.permissions.canDelete && vm.isAdmin() && ticket.status !== 'Fechado' && !ticket.is_archived" ng-click="vm.deleteTicket(ticket)" ng-disabled="ticket._busy">{{ ticket._busy ? '...' : 'Excluir' }}</button>
+              <button type="button" class="archive-btn" ng-if="vm.permissions.canArchive && (vm.isAdmin() || vm.isAgent()) && ticket.status === 'Fechado' && !ticket.is_archived" ng-click="vm.archiveTicket(ticket)" ng-disabled="ticket._busy">{{ ticket._busy ? '...' : 'Arquivar' }}</button>
+            </div>
+
+            <section class="comments-panel glass" ng-if="vm.activeTicketId === ticket.id">
+              <h5>Timeline</h5>
+              <div class="details-tabs">
+                <button type="button" class="details-tab-btn" ng-class="{ active: vm.activeTab === 'comments' }" ng-click="vm.activeTab = 'comments'">Conversation</button>
+                <button type="button" class="details-tab-btn" ng-class="{ active: vm.activeTab === 'history' }" ng-click="vm.activeTab = 'history'">History</button>
+              </div>
+
+              <div class="comments-thread" id="comments-thread-{{ ticket.id }}" ng-if="vm.activeTab === 'comments'">
+                <article class="comment-item" ng-repeat="comment in vm.comments track by comment.id" ng-class="{ 'is-new-comment': comment.id === vm.lastCommentId }">
+                  <div class="comment-avatar">{{ vm.commentInitials(comment) }}</div>
+                  <div class="comment-body">
+                    <div class="comment-meta">
+                      <strong>{{ comment.author.full_name }}</strong>
+                      <small>{{ comment.created_at | date:'dd/MM/yyyy HH:mm' }}</small>
+                    </div>
+                    <p>{{ comment.content }}</p>
+                  </div>
+                </article>
+                <p class="comments-empty" ng-if="!vm.commentsLoading && !vm.comments.length">Nenhum comentário ainda.</p>
+                <p class="comments-empty" ng-if="vm.commentsLoading">Carregando comentários...</p>
+              </div>
+
+              <form class="comment-form" ng-submit="vm.sendComment(ticket)" ng-if="vm.activeTab === 'comments'">
+                <textarea ng-model="vm.commentDraft" placeholder="Escreva um comentário para o ticket" required></textarea>
+                <button type="submit" class="bounce-btn" ng-disabled="vm.commentSending || vm.commentsLoading">{{ vm.commentSending ? 'Enviando...' : 'Submit Comment' }}</button>
+              </form>
+
+              <div class="history-thread" ng-if="vm.activeTab === 'history'">
+                <article class="history-item" ng-repeat="item in vm.history track by item.id">
+                  <span class="history-icon">⦿</span>
+                  <div class="history-body">
+                    <p>{{ item.summary }}</p>
+                    <small>{{ item.created_at | date:'dd/MM/yyyy HH:mm' }}</small>
+                  </div>
+                </article>
+                <p class="comments-empty" ng-if="!vm.historyLoading && !vm.history.length">Nenhuma alteração registrada.</p>
+                <p class="comments-empty" ng-if="vm.historyLoading">Carregando histórico...</p>
+              </div>
+            </section>
+          </div>
+        </article>
+      </section>
+    </script>
+
+    <script type="text/ng-template" id="complete-profile.html">
+      <section class="glass panel">
+        <h3>Completar Perfil Corporativo</h3>
+        <profile-directive profile="vm.profile" on-save="vm.saveProfile(profilePayload)"></profile-directive>
+        <section class="mobile-profile-logout glass" ng-if="vm.user">
+          <div>
+            <strong>Sessão ativa</strong>
+            <small>{{ vm.user.email }}</small>
+          </div>
+          <button type="button" class="mobile-logout-btn" ng-click="vm.signOut()">Sair da conta</button>
+        </section>
+      </section>
+    </script>
+
+    <script type="text/ng-template" id="archived.html">
+      <section class="archived-page" ng-if="vm.isAdmin() || vm.isAgent()">
+        <section class="glass panel archived-hero">
+          <div>
+            <p class="welcome-eyebrow">Histórico operacional</p>
+            <h3>Chamados Arquivados</h3>
+            <p>Consulte chamados fechados que foram preservados fora do Kanban principal.</p>
+          </div>
+          <div class="archived-count glass">
+            <small>Total arquivado</small>
+            <strong>{{ vm.archivedTickets.length }}</strong>
+          </div>
+        </section>
+
+        <section class="glass panel archived-toolbar">
+          <input type="search" ng-model="vm.archivedSearch" placeholder="Buscar por código, assunto, solicitante ou e-mail">
+          <select ng-model="vm.archivedQueueFilter">
+            <option value="">Todas as filas</option>
+            <option ng-repeat="q in vm.queues track by q.id" value="{{ q.id }}">{{ q.name }}</option>
+          </select>
+        </section>
+
+        <section class="archived-timeline glass" ng-if="!vm.archivedLoading && vm.filteredArchivedTickets().length">
+          <article class="archived-timeline-item" ng-repeat="ticket in vm.filteredArchivedTickets() track by ticket.id">
+            <div class="archived-timeline-marker"></div>
+
+            <div class="archived-card glass">
+              <header class="archived-card-header">
+                <div>
+                  <strong>#{{ ticket.ticket_code || ticket.id }}</strong>
+                  <h4>{{ ticket.title || 'Sem assunto' }}</h4>
+                  <small>{{ ticket.requester_name || 'Solicitante não informado' }} • {{ ticket.category_name || 'Sem categoria' }}</small>
+                </div>
+                <span class="badge">{{ ticket.priority }}</span>
+              </header>
+
+              <div class="archived-meta-grid">
+                <div>
+                  <span>Status</span>
+                  <strong>{{ ticket.status }}</strong>
+                </div>
+                <div>
+                  <span>Fechado em</span>
+                  <strong>{{ vm.closedAtLabel(ticket) }}</strong>
+                </div>
+                <div>
+                  <span>Arquivado em</span>
+                  <strong>{{ vm.archivedAtLabel(ticket) }}</strong>
+                </div>
+                <div>
+                  <span>Fila</span>
+                  <strong>{{ ticket.queue_name || 'Sem fila' }}</strong>
+                </div>
+                <div>
+                  <span>Responsável</span>
+                  <strong>{{ ticket.assigned_to.full_name || 'Sem responsável' }}</strong>
+                </div>
+                <div>
+                  <span>E-mail</span>
+                  <strong>{{ vm.ticketEmailLabel(ticket) }}</strong>
+                </div>
+              </div>
+
+              <p class="archived-description">{{ ticket.description || 'Sem descrição informada.' }}</p>
+
+              <div class="archived-card-actions">
+                <button type="button" class="ghost-btn" ng-click="vm.toggleArchivedDetails(ticket)">
+                  {{ ticket._showArchivedDetails ? 'Ocultar detalhes' : 'Ver detalhes' }}
+                </button>
+              </div>
+
+              <section class="archived-details glass" ng-if="ticket._showArchivedDetails">
+                <div class="requester-info-grid" ng-if="ticket.requester_profile">
+                  <div class="requester-info-row">
+                    <span>Telefone</span>
+                    <strong>{{ ticket.requester_profile.phone_number || 'Não informado' }}</strong>
+                  </div>
+                  <div class="requester-info-row">
+                    <span>Documento</span>
+                    <strong>{{ ticket.requester_profile.document_number || 'Não informado' }}</strong>
+                  </div>
+                  <div class="requester-info-row">
+                    <span>Localidade</span>
+                    <strong>{{ vm.requesterLocation(ticket) }}</strong>
+                  </div>
+                  <div class="requester-info-row">
+                    <span>ID interno</span>
+                    <strong>{{ vm.requesterShortId(ticket) }}</strong>
+                  </div>
+                </div>
+                <p class="comments-empty" ng-if="!ticket.requester_profile">Dados do solicitante não informados.</p>
+              </section>
+
+              <button
+                type="button"
+                class="archived-delete-btn"
+                ng-if="vm.permissions.canDeleteArchived && vm.isAdmin() && ticket.is_archived"
+                ng-click="vm.deleteArchivedTicket(ticket)"
+                ng-disabled="ticket._busy"
+                title="Excluir chamado arquivado definitivamente"
+                aria-label="Excluir chamado arquivado definitivamente">
+                {{ ticket._busy ? 'Excluindo...' : 'Excluir definitivo' }}
+              </button>
+            </div>
+          </article>
+        </section>
+
+        <section class="glass panel archived-empty" ng-if="!vm.archivedLoading && !vm.filteredArchivedTickets().length">
+          <h3>Nenhum chamado arquivado</h3>
+          <p>Quando um chamado fechado for arquivado, ele aparecerá aqui com seu histórico preservado.</p>
+        </section>
+
+        <section class="glass panel archived-empty" ng-if="vm.archivedLoading">
+          <h3>Carregando arquivados...</h3>
+          <p>Aguarde enquanto buscamos o histórico preservado.</p>
+        </section>
+      </section>
+    </script>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.3/angular.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.3/angular-animate.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.3/angular-route.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.3/angular-sanitize.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
